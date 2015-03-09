@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block main %}
+    <div>
+        <h1>Third-party authentication demo</h1>
+
+        <p>
+        <ul>
+            {% if user and not user.is_anonymous %}
+                <li>
+                    <a>Hello {{ user.get_full_name|default:user.username }}!</a>
+                </li>
+                <li>
+                    <a href="{% url 'auth:logout' %}?next={{ request.path }}">Logout</a>
+                </li>
+                <li>
+                    <form method='post' action="/picture/">
+                        {% csrf_token %}
+                        <button type="submit">see picture</button>
+                    </form>
+                </li>
+            {% else %}
+                <li>
+                    <a href="{% url 'social:begin' 'facebook' %}?next={{ request.path }}">Login with Facebook</a>
+                </li>
+                <li>
+                    <a href="{% url 'social:begin' 'google-oauth2' %}?next={{ request.path }}">Login with Google</a>
+                </li>
+                <li>
+                    <a href="{% url 'social:begin' 'twitter' %}?next={{ request.path }}">Login with Twitter</a>
+                </li>
+                <li>
+                    <a id="kakao-login-btn"></a>
+                </li>
+                <li>
+                    <p id="demo"></p>
+                </li>
+            {% endif %}
+        </ul>
+        </p>
+    </div>
+
+
+    <script>
+        // using jQuery
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie != '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        var csrftoken = getCookie('csrftoken');
+        // 사용할 앱의 Javascript 키를 설정해 주세요.
+        Kakao.init('2f91ab3dd8e6da80fc7ab6ac09fba3c6');
+        // 카카오 로그인 버튼을 생성합니다.
+        Kakao.Auth.createLoginButton({
+            container: '#kakao-login-btn',
+            success: function(authObj) {
+                // 로그인 성공시, API를 호출합니다.
+                Kakao.API.request({
+                    url: '/v1/user/me',
+                    success: function(res) {
+                        document.getElementById("demo").innerHTML = JSON.stringify(res);
+                        $.ajax({
+                            type:"POST",
+                            url:"",
+                            data: res,
+                            headers: { 'X-CSRFToken': csrftoken },
+                            success: function(data){
+                                location.reload();
+                                document.getElementById("demo").innerHTML = "asdf";
+                            }
+                        });
+                        return false;
+                    },
+                    fail: function(error) {
+                        alert(JSON.stringify(error))
+                    }
+                });
+            },
+            fail: function(err) {
+                alert(JSON.stringify(err))
+            }
+        });
+    </script>
+{% endblock %}
